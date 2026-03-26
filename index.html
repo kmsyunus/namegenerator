@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Subsequence Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0f0f0f;
+    color: #e5e5e5;
+
+    /* 🔒 LOCK PAGE */
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* CENTER LAYOUT */
+.wrapper {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 1200px;
+    height: 90vh;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* CARD */
+.card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* INPUT */
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #1a1a1a;
+    color: white;
+    font-size: 15px;
+}
+
+input:focus {
+    outline: 1px solid #ff0000;
+}
+
+button {
+    padding: 12px 18px;
+    border: none;
+    background: #ff0000;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #cc0000;
+}
+
+/* SLIDER */
+.slider {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.slider::-webkit-scrollbar {
+    height: 6px;
+}
+
+.slider::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+}
+
+.slider button {
+    background: #1f1f1f;
+    color: #aaa;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.slider button.active {
+    background: #ff0000;
+    color: white;
+}
+
+/* GRID */
+.grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 16px;
+    min-height: 0;
+}
+
+/* TABLE AREA (SCROLLABLE) */
+.table-wrapper {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #222;
+    font-size: 14px;
+}
+
+.highlight {
+    color: #ff4d4d;
+    font-weight: 600;
+}
+
+/* PAGINATION (SCROLLABLE) */
+.pagination {
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.page {
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    background: #1f1f1f;
+    font-size: 13px;
+}
+
+.page.active {
+    background: #ff0000;
+    color: white;
+}
+
+/* TOTAL */
+.total {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #888;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+<div class="container">
+
+<div class="card">
+    <div class="input-group">
+        <input id="inputText" placeholder="Masukkan kata...">
+        <button onclick="generate()">Generate</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="slider" id="lengthFilter"></div>
+</div>
+
+<div class="grid">
+
+    <div class="card table-wrapper">
+        <table id="resultTable"></table>
+        <div class="total" id="totalCount"></div>
+    </div>
+
+    <div class="card pagination" id="pagination"></div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+let allSubseq = [];
+let filtered = [];
+let currentPage = 1;
+let perPage = 20;
+let originalText = "";
+
+/* GENERATE SUBSEQUENCE */
+function generateSubsequences(str) {
+    let result = [];
+    let n = str.length;
+
+    function dfs(index, path, positions) {
+        if (path.length >= 2) {
+            result.push({text: path, pos: [...positions]});
+        }
+
+        for (let i = index; i < n; i++) {
+            path += str[i];
+            positions.push(i);
+
+            dfs(i + 1, path, positions);
+
+            path = path.slice(0, -1);
+            positions.pop();
+        }
+    }
+
+    dfs(0, "", []);
+    return result;
+}
+
+/* MAIN GENERATE */
+function generate() {
+    originalText = document.getElementById("inputText").value;
+    if (!originalText) return;
+
+    allSubseq = generateSubsequences(originalText);
+
+    createLengthFilter();
+    applyFilter(2);
+}
+
+/* SLIDER */
+function createLengthFilter() {
+    let container = document.getElementById("lengthFilter");
+    container.innerHTML = "";
+
+    for (let i = 2; i < originalText.length; i++) {
+        let btn = document.createElement("button");
+        btn.innerText = i + " huruf";
+
+        btn.onclick = () => applyFilter(i);
+
+        if (i === 2) btn.classList.add("active");
+
+        container.appendChild(btn);
+    }
+}
+
+/* FILTER */
+function applyFilter(length) {
+    currentPage = 1;
+
+    document.querySelectorAll(".slider button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".slider button")[length - 2].classList.add("active");
+
+    filtered = allSubseq.filter(x => x.text.length === length);
+
+    render();
+}
+
+/* RENDER */
+function render() {
+    let table = document.getElementById("resultTable");
+    let pagination = document.getElementById("pagination");
+
+    table.innerHTML = "";
+    pagination.innerHTML = "";
+
+    let start = (currentPage - 1) * perPage;
+    let end = start + perPage;
+    let pageData = filtered.slice(start, end);
+
+    pageData.forEach(item => {
+        let tr = document.createElement("tr");
+
+        let visual = "";
+        for (let i = 0; i < originalText.length; i++) {
+            if (item.pos.includes(i)) {
+                visual += `<span class="highlight">${originalText[i]}</span>`;
+            } else {
+                visual += originalText[i];
+            }
+        }
+
+        tr.innerHTML = `
+            <td>${visual}</td>
+            <td>${item.text}</td>
+        `;
+        table.appendChild(tr);
+    });
+
+    let totalPages = Math.ceil(filtered.length / perPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+        let div = document.createElement("div");
+        div.className = "page";
+        if (i === currentPage) div.classList.add("active");
+
+        div.innerText = String(i).padStart(6, "0");
+
+        div.onclick = () => {
+            currentPage = i;
+            render();
+        };
+
+        pagination.appendChild(div);
+    }
+
+    document.getElementById("totalCount").innerText =
+        "Total kombinasi: " + filtered.length;
+}
+</script>
+
+</body>
+</html>
